@@ -1,0 +1,45 @@
+# .gitignore for ASP.NET Core project
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Visual Studio
+.vs/
+
+# Rider
+.idea/
+*.sln.iml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# NuGet packages
+*.nupkg
+# NuGet restore
+.nuget/
+
+# Others
+*.vspscc
+*.vssscc
+
+# Static web assets
+**/staticwebassets/
+**/staticwebassets.build.json
+**/staticwebassets.build.json.cache
+**/staticwebassets.references.upToDateCheck.txt
+**/staticwebassets.removed.txt
+
+# End of .gitignore

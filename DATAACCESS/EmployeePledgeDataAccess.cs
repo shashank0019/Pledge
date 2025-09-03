@@ -24,29 +24,49 @@ namespace Pledge.DATAACCESS
             await con.OpenAsync();
             using var reader = await cmd.ExecuteReaderAsync();
 
+            if (!reader.HasRows)
+            {
+                Console.WriteLine($"⚠️ No rows returned for CID={cid}");
+                return null;
+            }
+
             if (await reader.ReadAsync())
             {
+                // 🔹 Debug: print column names & values to console
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    Console.WriteLine($"Column[{i}] {reader.GetName(i)} = {reader[i]}");
+                }
+
+                // 🔹 Safe mapping: check if column exists before reading
                 return new SecurityPledgeDetailsDto
                 {
-                    InstanceId = reader["InstanceID"] != DBNull.Value ? Convert.ToInt32(reader["InstanceID"]) : 0,
-                    SPName = reader["SPName"]?.ToString(),
-                    SPCheckText = reader["SPCheckText"]?.ToString(),
-                    SPHtmlBody = reader["SPHtmlBody"]?.ToString(),
-                    WFStatus = reader["WFStatus"]?.ToString(),
-                    IsAgree = reader["IsAgree"] != DBNull.Value ? Convert.ToBoolean(reader["IsAgree"]) : (bool?)null,
-                    EmpName = reader["EmpName"]?.ToString(),
-                    IsUploadAttachmentAvailable = reader["IsUploadAttachmentAvailable"] != DBNull.Value && Convert.ToBoolean(reader["IsUploadAttachmentAvailable"]),
-                    FileIndex = reader["FileIndex"] != DBNull.Value ? Convert.ToInt32(reader["FileIndex"]) : (int?)null,
-                    IsTimerEnabled = reader["IsTimerEnabled"] != DBNull.Value && Convert.ToBoolean(reader["IsTimerEnabled"]),
-                    TimeInSecs = reader["TimeInSecs"] != DBNull.Value ? Convert.ToInt32(reader["TimeInSecs"]) : (int?)null,
-                    SPID = reader["SPID"] != DBNull.Value ? Convert.ToInt32(reader["SPID"]) : 0
+                    InstanceId = reader.HasColumn("InstanceID") ? Convert.ToInt32(reader["InstanceID"]) : 0,
+                    SPName = reader.HasColumn("SPName") ? reader["SPName"].ToString() : null,
+                    SPCheckText = reader.HasColumn("SPCheckText") ? reader["SPCheckText"].ToString() : null,
+                    SPHtmlBody = reader.HasColumn("SPHtmlBody") ? reader["SPHtmlBody"].ToString() : null,
+                    WFStatus = reader.HasColumn("WFStatus") ? reader["WFStatus"].ToString() : null,
+                    IsAgree = reader.HasColumn("IsAgree") && reader["IsAgree"] != DBNull.Value
+                                ? Convert.ToBoolean(reader["IsAgree"]) : (bool?)null,
+                    EmpName = reader.HasColumn("EmpName") ? reader["EmpName"].ToString() : null,
+                    IsUploadAttachmentAvailable = reader.HasColumn("IsUploadAttachmentAvailable") &&
+                                                  reader["IsUploadAttachmentAvailable"] != DBNull.Value &&
+                                                  Convert.ToBoolean(reader["IsUploadAttachmentAvailable"]),
+                    FileIndex = reader.HasColumn("FileIndex") && reader["FileIndex"] != DBNull.Value
+                                ? Convert.ToInt32(reader["FileIndex"]) : (int?)null,
+                    IsTimerEnabled = reader.HasColumn("IsTimerEnabled") && reader["IsTimerEnabled"] != DBNull.Value &&
+                                     Convert.ToBoolean(reader["IsTimerEnabled"]),
+                    TimeInSecs = reader.HasColumn("TimeInSecs") && reader["TimeInSecs"] != DBNull.Value
+                                ? Convert.ToInt32(reader["TimeInSecs"]) : (int?)null,
+                    SPID = reader.HasColumn("SPID") && reader["SPID"] != DBNull.Value
+                                ? Convert.ToInt32(reader["SPID"]) : 0
                 };
             }
 
             return null;
         }
 
-        // Example: Save pledge response
+        // Save pledge response
         public async Task<int> SubmitPledgeAsync(SecurityPledgeSubmitDto pledge)
         {
             using var con = new SqlConnection(_connectionString);
@@ -60,5 +80,18 @@ namespace Pledge.DATAACCESS
             return await cmd.ExecuteNonQueryAsync(); // returns affected rows
         }
     }
-}
 
+    // 🔹 Extension method to check if a column exists
+    public static class SqlDataReaderExtensions
+    {
+        public static bool HasColumn(this SqlDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (reader.GetName(i).Equals(columnName, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+    }
+}
